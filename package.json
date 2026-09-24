@@ -6,6 +6,12 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "verify:production": "node scripts/verify-production.mjs",
-    "preview": "node scripts/preview.mjs"
+    "verify:cloudflare": "node scripts/verify-cloudflare.mjs",
+    "preview": "node scripts/preview.mjs",
+    "cloudflare:preview": "wrangler dev",
+    "cloudflare:deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.138.0"
   }
 }

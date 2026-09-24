@@ -1,76 +1,79 @@
 # Support Hub
 
-A static routing layer for optional application support. Each application has a stable route, while its payment providers and project link remain centralized and independently replaceable. Support Hub does not accept or process payments.
+A static routing layer for optional application support. Each application has a stable route, while its provider settings stay centralized and independently replaceable. Support Hub does not accept or process payments.
 
 ## Project structure
 
-- `src/assets/products.json` — the product registry and per-product provider settings.
-- `src/product.html` — the shared application page template.
+- `src/assets/products.json` — product registry and per-product provider settings.
+- `src/product.html` — shared product page template.
 - `src/assets/app.js` and `styles.css` — shared rendering and presentation.
-- `scripts/build.mjs` — validates product route IDs and creates the deployable site in `dist/`.
-- `scripts/verify-production.mjs` — builds and checks the release output and safety rules.
-- `scripts/preview.mjs` — serves the built site locally.
+- `scripts/build.mjs` — builds generic static output in `dist/`.
+- `scripts/verify-production.mjs` — builds and checks release files, providers, paths, and Wrangler configuration.
+- `scripts/preview.mjs` — previews generic static output locally.
+- `wrangler.jsonc` — Cloudflare Workers Static Assets settings.
 
 ## Product configuration
 
-Each entry in `products` defines:
+Each entry in `products` defines an `id`, display name, description, icon/accent, optional GitHub URL, suggested amounts, and separate Ukraine/international provider settings. Add an application by adding one complete object to `src/assets/products.json`; the shared template creates its routes without duplicated page markup. Keep IDs unique and URL-safe.
 
-- `id` — stable URL segment, lowercase letters, numbers, and hyphens only.
-- `displayName`, `shortDescription`, `icon`, and `accent` / `accentSoft` — product identity.
-- `githubUrl` — optional HTTPS project link. Leave it empty until the destination is known.
-- `suggestedAmounts` — optional display-only suggestions. These values are not sent to providers and do not affect provider navigation. If omitted or empty, provider choices still render normally.
-- `providers.international` and `providers.ukraine` — separate provider settings for this application.
+Suggested amounts are display-only and are never sent to a provider. Empty or omitted amounts do not affect provider links. Product routes and per-product provider URLs preserve attribution.
 
-To add an application, add one complete product object to `products` in `src/assets/products.json`. Give it a unique route-safe `id`; the build creates `/<id>/` using the shared page template. No page markup needs to be copied. Product-specific provider URLs preserve attribution at the route and configuration level. If a provider is shared across products, use a provider-supported product reference only after verifying that feature.
+## Provider configuration
 
-## Provider configuration and replacement
+Provider states are `configured`, `unavailable`, and `coming_soon`. Only a valid public HTTPS URL in the `configured` state creates an active link. Each external action names its destination host and opens in a new tab. SupportHub does not assume amount preselection.
 
-Each provider has a `name`, a `state`, and a `url`. Supported states are:
+To swap a provider, edit only that product's provider entry. Verify onboarding, the public destination, and the real payment flow first; then set the verified HTTPS URL and change the state to `configured`. Invalid, placeholder, missing, or non-HTTPS URLs never become links.
 
-| State | Page behavior |
-| --- | --- |
-| `configured` | Shows the region-specific support link only when `url` is a non-placeholder HTTPS URL. The card names the provider and shows its hostname before the external link. |
-| `coming_soon` | Shows a status and explanatory text, with no payment button. |
-| `unavailable` | Shows an unavailable status, with no payment button. |
+Current provider URLs are intentionally empty. Token Monitor and FossiDesk Donatello/mono options remain `unavailable`; GitHub project URLs are also unset. PayPal is not configured or required. Do not activate a provider until its real URL is verified.
 
-To replace a provider, edit only that product's provider entry. First verify account onboarding, the payment destination, and a real payment flow. Then set its `name`, set `url` to the verified HTTPS destination, and change `state` to `configured`. The page opens the provider in a new tab and labels the action “Support internationally” or “Support from Ukraine.” It does not add amount parameters or assume amount preselection. A missing, invalid, placeholder, or non-HTTPS URL never becomes a link, even if its state says `configured`.
+## Privacy
 
-### Current provider URL status
+SupportHub itself does not use analytics, cookies, fingerprinting, accounts, payment processing, or card-detail collection. Hosting and external provider services may process technical request information under their own current policies. Review [Cloudflare's privacy policy](https://www.cloudflare.com/privacypolicy/) for the hosting provider's terms.
 
-No payment destination is verified or active in this configuration:
+## Production hosting: Cloudflare Workers Static Assets
 
-- Token Monitor — Donatello (international) and mono jar (Ukraine): URLs empty; unverified candidates.
-- FossiDesk — Donatello (international) and mono jar (Ukraine): URLs empty; unverified candidates.
-- PayPal is not configured and is not a dependency.
+Production is intended to use Cloudflare Workers Static Assets on the `workers.dev` hostname. The build remains a static site: Wrangler serves `dist/` directly, with no Worker script, backend, database, or SPA fallback. Static asset requests are free and unlimited under Cloudflare Workers pricing; account limits and plan details can change, so review the [current pricing and limits](https://developers.cloudflare.com/workers/platform/pricing/) before deployment.
 
-GitHub/project URLs are also empty until verified destinations are supplied. Do not change a provider to `configured` until its URL and onboarding/payment flow have been checked.
+The Wrangler config pins the asset directory to `./dist/`, uses `drop-trailing-slash` so `/token-monitor` and `/fossidesk` are canonical, and leaves unmatched URLs as real 404 responses. Product directory index files and flat `.html` aliases remain in the generic build output for portability to other static hosts.
 
-## Attribution and privacy
+### Local build and verification
 
-The product route and per-product provider URL provide the primary attribution. Configure separate provider endpoints per application when possible. Support Hub does not add analytics, cookies, accounts, fingerprinting, payment processing, or card-detail collection. Payment-provider and static-host sites are external and may apply their own privacy practices. GitHub Pages states that visitor IP addresses are logged for security purposes ([GitHub Pages privacy documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages#data-collection)).
-
-## Production deployment
-
-Requires Node.js 20 or newer. No package installation or third-party runtime dependency is needed.
+Requires Node.js 20 or newer. Wrangler 4 is pinned in `package.json` and `package-lock.json`.
 
 ```powershell
+npm ci
+npm run build
 npm run verify:production
+npm run verify:cloudflare
+npm run cloudflare:preview
 ```
 
-The command runs the production build and checks the generated pages, assets, parsed product configuration, route ID uniqueness, provider URL rules, external-link safety, and relative asset paths. Publish the resulting `dist/` directory.
+`verify:production` checks the generated files, product/provider rules, generic relative paths, and Cloudflare configuration, then runs the automated Wrangler routing smoke test. `verify:cloudflare` runs that route test on its own. `cloudflare:preview` starts Wrangler's interactive local asset server. Unknown pages/assets must return 404; trailing-slash product URLs redirect to their no-slash canonical paths.
 
-The build emits both `/<id>.html` and `/<id>/index.html` for every product from the same page template. A host can resolve a no-slash URL through its clean-URL support or redirect it to the directory index; slash URLs resolve directly to `index.html`. This is static output and does not depend on a development server or SPA fallback. Relative assets and links work at the site root and below a repository subpath. No production hostname or domain is embedded in the build.
+For a preview using only the generic static host resolver, use `node scripts/preview.mjs`. That preview serves built files directly and never rewrites unknown paths to the home page.
 
-For GitHub Pages, publish the whole `dist/` tree; the build includes the required top-level `index.html` and a `.nojekyll` marker. Its product folders contain `index.html`, while flat HTML aliases support hosts that resolve extensionless URLs to `.html`. No separate SPA fallback is needed. GitHub Pages documents that it publishes static files in the source tree and looks for a top-level `index.html` entry file ([deployment documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site)).
+### Initial/manual deployment
 
-For a cold local check of the production files, run:
+Authenticate with the official Wrangler OAuth flow, then run:
 
 ```powershell
-node scripts/preview.mjs --port=4174
+npx wrangler login
+npm run verify:production
+npm run cloudflare:deploy
 ```
 
-To preview it mounted under a subpath, use `node scripts/preview.mjs --port=4175 --base=/supporthub`. The preview serves files from `dist/` directly; it does not rewrite unknown paths to the home page.
+The resulting public URL has the form `https://supporthub.<account-subdomain>.workers.dev`; use the exact hostname Wrangler reports. No API token belongs in this repository. An optional custom domain can be attached later without changing product route IDs or application routing concepts.
 
-Before configuring real payments, replace only the product's provider `url` with the verified public HTTPS address and change its state to `configured`. The production verifier rejects configured providers with missing, unsafe, or non-HTTPS destinations. Keep providers `unavailable` or `coming_soon` until account onboarding and the payment flow are verified. Donatello, mono jar, PayPal, and GitHub URLs remain unconfigured in the current product data.
+### Native Workers Builds from GitHub
 
-Upload the contents of `dist/` to GitHub Pages or another conventional static host. Keep the generated relative paths intact. No domain, backend, database, or production provider account is required to publish the unavailable-state pages.
+Connect the existing Worker to `u2loveme/supporthub` through Cloudflare Workers Builds. Select `main` as the production branch and set:
+
+- Build command: `npm run verify:production`
+- Deploy command: `npm run cloudflare:deploy`
+- Root directory: repository root
+
+Workers Builds uses the Wrangler version pinned in this repository and deploys on pushes to `main`. GitHub authorization and the Workers Builds connection are configured in Cloudflare's dashboard; no Cloudflare credentials are stored in GitHub Actions or the repository.
+
+### Static-host portability and migration fallback
+
+The same `dist/` output remains usable on a conventional static host or under a repository subpath because it uses relative asset paths. GitHub Pages is still the migration fallback until the Cloudflare live route checks and native Workers Builds deployment are verified. After that gate, disable Pages deployment and unpublish its site; do not remove the GitHub repository or rewrite history.

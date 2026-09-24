@@ -11,6 +11,7 @@ const output = path.join(root, "dist");
 const build = spawnSync(process.execPath, ["scripts/build.mjs"], { cwd: root, stdio: "inherit" });
 if (build.error) throw build.error;
 if (build.status !== 0) process.exit(build.status ?? 1);
+assert.ok((await stat(output)).isDirectory(), "Production output directory dist/ must exist after build");
 
 async function requireFile(relativePath) {
   const filePath = path.join(output, relativePath);
@@ -20,6 +21,15 @@ async function requireFile(relativePath) {
 
 const homeHtml = await requireFile("index.html");
 await requireFile(".nojekyll");
+const cloudflare = JSON.parse(await readFile(path.join(root, "wrangler.jsonc"), "utf8"));
+assert.equal(cloudflare.name, "supporthub", "Cloudflare Worker name must remain stable");
+assert.equal(cloudflare.workers_dev, true, "Cloudflare workers.dev must be enabled");
+assert.equal(cloudflare.send_metrics, false, "Wrangler metrics must stay disabled");
+assert.equal(cloudflare.dependencies_instrumentation?.enabled, false, "Dependency instrumentation must stay disabled");
+assert.equal(cloudflare.assets?.directory, "./dist/", "Cloudflare must publish the production output directory");
+assert.equal(cloudflare.assets?.html_handling, "drop-trailing-slash", "Cloudflare routes must use canonical no-slash URLs");
+assert.equal(cloudflare.assets?.not_found_handling, "none", "Unknown paths must not use an SPA fallback");
+assert.ok(!cloudflare.main, "Static Assets deployment must not add Worker runtime code");
 const sourceProducts = JSON.parse(await readFile(path.join(root, "src/assets/products.json"), "utf8"));
 const products = validateProducts(sourceProducts.products);
 const builtProducts = JSON.parse(await requireFile("assets/products.json"));
@@ -73,4 +83,8 @@ const assetPaths = [
 ];
 assert.deepEqual(assetPaths, ["/supporthub/assets/app.js", "/supporthub/assets/app.js", "/supporthub/assets/app.js"], "Relative assets must resolve under a hosting subpath");
 
-console.log(`Production verification passed: ${products.length} product routes, route aliases, assets, provider policy, and relative paths.`);
+const cloudflareSmoke = spawnSync(process.execPath, ["scripts/verify-cloudflare.mjs"], { cwd: root, stdio: "inherit" });
+if (cloudflareSmoke.error) throw cloudflareSmoke.error;
+if (cloudflareSmoke.status !== 0) process.exit(cloudflareSmoke.status ?? 1);
+
+console.log(`Production verification passed: ${products.length} product routes, assets, provider policy, relative paths, Cloudflare config, and routing.`);
