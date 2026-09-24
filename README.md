@@ -74,6 +74,6 @@ Connect the existing Worker to `u2loveme/supporthub` through Cloudflare Workers 
 
 Workers Builds uses the Wrangler version pinned in this repository and deploys on pushes to `main`. GitHub authorization and the Workers Builds connection are configured in Cloudflare's dashboard; no Cloudflare credentials are stored in GitHub Actions or the repository.
 
-### Static-host portability and migration fallback
+### Static-host portability
 
-The same `dist/` output remains usable on a conventional static host or under a repository subpath because it uses relative asset paths. GitHub Pages is still the migration fallback until the Cloudflare live route checks and native Workers Builds deployment are verified. After that gate, disable Pages deployment and unpublish its site; do not remove the GitHub repository or rewrite history.
+The same `dist/` output remains usable on a conventional static host or under a repository subpath because it uses relative asset paths. Cloudflare Workers Static Assets is the production host; Cloudflare's native Workers Builds integration tracks `main`. GitHub Pages deployment was retired after Cloudflare's production build and live route checks passed. The GitHub repository remains public and unchanged otherwise.
