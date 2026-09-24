@@ -1,0 +1,50 @@
+{
+  "products": [
+    {
+      "id": "token-monitor",
+      "displayName": "Token Monitor",
+      "shortDescription": "A desktop companion for keeping AI usage in view.",
+      "supportMessage": "Support is optional and helps fund ongoing work on Token Monitor.",
+      "icon": "◉",
+      "accent": "#d7f26b",
+      "accentSoft": "rgba(215, 242, 107, .12)",
+      "githubUrl": "",
+      "suggestedAmounts": ["$3", "$5", "$10"],
+      "providers": {
+        "international": {
+          "name": "Donatello",
+          "state": "unavailable",
+          "url": ""
+        },
+        "ukraine": {
+          "name": "mono jar",
+          "state": "unavailable",
+          "url": ""
+        }
+      }
+    },
+    {
+      "id": "fossidesk",
+      "displayName": "FossiDesk",
+      "shortDescription": "A desktop workspace for everyday work.",
+      "supportMessage": "Support is optional and helps fund ongoing work on FossiDesk.",
+      "icon": "✿",
+      "accent": "#f2a875",
+      "accentSoft": "rgba(242, 168, 117, .13)",
+      "githubUrl": "",
+      "suggestedAmounts": ["$3", "$5", "$10"],
+      "providers": {
+        "international": {
+          "name": "Donatello",
+          "state": "unavailable",
+          "url": ""
+        },
+        "ukraine": {
+          "name": "mono jar",
+          "state": "unavailable",
+          "url": ""
+        }
+      }
+    }
+  ]
+}
