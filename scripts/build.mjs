@@ -7,6 +7,7 @@ import { parseSafeGithubUrl, resolveProvider } from "../src/assets/provider-poli
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const source = path.join(root, "src");
 const output = path.join(root, "dist");
+const publicOrigin = "https://vivibureau.pp.ua";
 const assetSource = path.join(source, "assets");
 const configuredBasePath = process.env.SUPPORTHUB_BASE_PATH?.trim() ?? "";
 if (configuredBasePath && (!/^\/(?:[a-z0-9-]+)(?:\/[a-z0-9-]+)*$/i.test(configuredBasePath) || configuredBasePath.includes(".."))) {
@@ -271,13 +272,16 @@ function metadataValues(localeCode, documentPath, title, description, alternateL
   const enRoute = routeSuffix === "/" ? "/" : routeSuffix;
   const ukRoute = routeSuffix === "/" ? "/uk" : `/uk${routeSuffix}`;
   const alternateOgLocale = alternate.ogLocale;
+  const canonicalUrl = `${publicOrigin}${canonicalPath}`;
+  const enUrl = `${publicOrigin}${enRoute}`;
+  const ukUrl = `${publicOrigin}${ukRoute}`;
   return {
     LANG: locale.lang,
     TITLE: escapeHtml(title),
     DESCRIPTION: escapeHtml(description),
     OG_LOCALE: locale.ogLocale,
     OG_ALTERNATE: alternateOgLocale,
-    SEO_TAGS: `<link rel="canonical" href="${escapeHtml(relativeHref(documentPath, canonicalPath))}" />\n    <link rel="alternate" hreflang="en" href="${escapeHtml(relativeHref(documentPath, enRoute))}" />\n    <link rel="alternate" hreflang="uk" href="${escapeHtml(relativeHref(documentPath, ukRoute))}" />\n    <link rel="alternate" hreflang="x-default" href="${escapeHtml(relativeHref(documentPath, enRoute))}" />`,
+    SEO_TAGS: `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />\n    <link rel="alternate" hreflang="en" href="${escapeHtml(enUrl)}" />\n    <link rel="alternate" hreflang="uk" href="${escapeHtml(ukUrl)}" />\n    <link rel="alternate" hreflang="x-default" href="${escapeHtml(enUrl)}" />\n    <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`,
     STYLESHEET: escapeHtml(relativeHref(documentPath, "/assets/styles.css")),
     FOOTER_TAGLINE: footerTagline(locale.footerTagline)
   };

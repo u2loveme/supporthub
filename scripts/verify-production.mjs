@@ -21,7 +21,7 @@ async function requireFile(relativePath) {
 }
 
 const cloudflare = JSON.parse(await readFile(path.join(root, "wrangler.jsonc"), "utf8"));
-assert.equal(cloudflare.name, "supporthub", "Cloudflare Worker name must remain stable");
+assert.equal(cloudflare.name, "vivi-bureau", "Cloudflare Worker must use the Vivi Bureau identity");
 assert.equal(cloudflare.workers_dev, true, "Cloudflare workers.dev must be enabled");
 assert.equal(cloudflare.send_metrics, false, "Wrangler metrics must stay disabled");
 assert.equal(cloudflare.dependencies_instrumentation?.enabled, false, "Dependency instrumentation must stay disabled");
@@ -104,6 +104,7 @@ function validateSeo(html, routePath, locale, productId = null) {
   assert.match(html, /<meta property="og:site_name" content="Vivi Bureau"\s*\/>/);
   assert.match(html, /<meta property="og:title"/);
   assert.match(html, /<meta property="og:description"/);
+  assert.match(html, /<meta property="og:url" content="https:\/\/vivibureau\.pp\.ua[^\"]*"\s*\/>/);
   assert.match(html, /<meta name="application-name" content="Vivi Bureau"\s*\/>/);
   assert.match(html, /<meta name="twitter:card" content="summary"\s*\/>/);
   assert.match(html, /<meta name="twitter:title"/);
@@ -113,17 +114,20 @@ function validateSeo(html, routePath, locale, productId = null) {
   assert.ok(visibleText.includes(expectedBody(locale, productId)), `${routePath} must contain its ${locale} UI copy in built HTML`);
 
   const fullRoute = `${sitePrefix}${routePath}` || "/";
-  const base = `https://supporthub.invalid${fullRoute}`;
+  const base = `https://vivibureau.pp.ua${fullRoute}`;
   const canonical = html.match(/<link rel="canonical" href="([^"]+)"\s*\/>/);
   assert.ok(canonical, `${routePath} must have a self-canonical`);
   const canonicalUrl = new URL(canonical[1], base);
-  assert.equal(canonicalUrl.pathname, `${sitePrefix}${canonicalRoute(locale, productId)}`, `${routePath} canonical must target its own locale route`);
+  assert.equal(canonicalUrl.origin, "https://vivibureau.pp.ua", `${routePath} canonical must use the public domain`);
+  assert.equal(canonicalUrl.pathname, canonicalRoute(locale, productId), `${routePath} canonical must target its own locale route`);
 
   const hreflangs = [...html.matchAll(/<link rel="alternate" hreflang="(en|uk|x-default)" href="([^"]+)"\s*\/>/g)];
   assert.equal(hreflangs.length, 3, `${routePath} must list reciprocal EN, UK, and x-default alternates`);
-  const routes = Object.fromEntries(hreflangs.map(([, language, href]) => [language, new URL(href, base).pathname]));
-  assert.equal(routes.en, `${sitePrefix}${canonicalRoute("en", productId)}`);
-  assert.equal(routes.uk, `${sitePrefix}${canonicalRoute("uk", productId)}`);
+  const alternateUrls = Object.fromEntries(hreflangs.map(([, language, href]) => [language, new URL(href, base)]));
+  const routes = Object.fromEntries(Object.entries(alternateUrls).map(([language, url]) => [language, url.pathname]));
+  assert.ok(Object.values(alternateUrls).every((url) => url.origin === "https://vivibureau.pp.ua"), `${routePath} hreflang URLs must use the public domain`);
+  assert.equal(routes.en, canonicalRoute("en", productId));
+  assert.equal(routes.uk, canonicalRoute("uk", productId));
   assert.equal(routes["x-default"], routes.en);
 
   const stylesheet = html.match(/<link rel="stylesheet" href="([^"]+)"/);

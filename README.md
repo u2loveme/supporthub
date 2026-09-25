@@ -81,15 +81,17 @@ npm run verify:production
 npm run cloudflare:deploy
 ```
 
-The resulting public URL has the form `https://supporthub.<account-subdomain>.workers.dev`; use the exact hostname Wrangler reports. No API token belongs in this repository. An optional custom domain can be attached later without changing product route IDs or application routing concepts.
+The target public domain is `https://vivibureau.pp.ua/`; the target Worker identity is `vivi-bureau`. Keep the existing `supporthub` Worker and `https://supporthub.support-hub.workers.dev/` address available until the new domain and HTTPS certificate are verified. Do not change the Cloudflare account's `support-hub` workers.dev subdomain as part of this migration.
 
 ### Native Workers Builds from GitHub
 
-Connect the existing Worker to `u2loveme/supporthub` through Cloudflare Workers Builds. Select `main` as the production branch and set:
+Connect a separate `vivi-bureau` Worker to `u2loveme/supporthub` through Cloudflare Workers Builds. Keep the existing `supporthub` Worker and its current Builds binding intact until the new domain is live. Use the migration branch for initial verification, then `main` after acceptance, and set:
 
 - Build command: `npm run verify:production`
 - Deploy command: `npm run cloudflare:deploy`
 - Root directory: repository root
+
+Attach `vivibureau.pp.ua` as a Worker Custom Domain only after the domain is registered, its Cloudflare zone is active, and Cloudflare's assigned nameservers are set at the registrar. Verify the custom domain and HTTPS before changing links or retiring the legacy Worker.
 
 Workers Builds uses the Wrangler version pinned in this repository and deploys on pushes to `main`. GitHub authorization and the Workers Builds connection are configured in Cloudflare's dashboard; no Cloudflare credentials are stored in GitHub Actions or the repository.
 
