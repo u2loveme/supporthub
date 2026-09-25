@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "supporthub",
+  "main": "src/legacy-redirect-worker.js",
+  "compatibility_date": "2026-09-24",
+  "workers_dev": true,
+  "send_metrics": false,
+  "dependencies_instrumentation": {
+    "enabled": false
+  }
+}

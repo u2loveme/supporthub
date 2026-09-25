@@ -93,6 +93,8 @@ Connect a separate `vivi-bureau` Worker to `u2loveme/supporthub` through Cloudfl
 
 Attach `vivibureau.pp.ua` as a Worker Custom Domain only after the domain is registered, its Cloudflare zone is active, and Cloudflare's assigned nameservers are set at the registrar. Verify the custom domain and HTTPS before changing links or retiring the legacy Worker.
 
+After the custom domain passes its live checks, the legacy `supporthub` Worker can be switched to `wrangler.legacy.jsonc` to permanently redirect requests while preserving their path and query string. Until then, keep its current production deployment and Workers Builds configuration unchanged. The redirect-only deployment command is `npm run cloudflare:deploy:legacy`.
+
 Workers Builds uses the Wrangler version pinned in this repository and deploys on pushes to `main`. GitHub authorization and the Workers Builds connection are configured in Cloudflare's dashboard; no Cloudflare credentials are stored in GitHub Actions or the repository.
 
 ### Static-host portability

@@ -9,7 +9,8 @@
     "verify:cloudflare": "node scripts/verify-cloudflare.mjs",
     "preview": "node scripts/preview.mjs",
     "cloudflare:preview": "wrangler dev",
-    "cloudflare:deploy": "wrangler deploy"
+    "cloudflare:deploy": "wrangler deploy",
+    "cloudflare:deploy:legacy": "wrangler deploy --config wrangler.legacy.jsonc"
   },
   "devDependencies": {
     "wrangler": "4.138.0"
