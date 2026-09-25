@@ -4,6 +4,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../dist");
+const redirectRules = (await readFile(path.join(root, "_redirects"), "utf8")).split(/\r?\n/)
+  .map((line) => line.trim().split(/\s+/))
+  .filter(([source, destination, status]) => source && destination && /^30[12378]$/.test(status ?? ""))
+  .map(([source, destination, status]) => [source, destination, Number(status)]);
 const argumentsByName = new Map(process.argv.slice(2).map((argument) => {
   const separator = argument.indexOf("=");
   return separator < 0 ? [argument, ""] : [argument.slice(0, separator), argument.slice(separator + 1)];
@@ -20,9 +24,13 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("--port
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
-  ".svg": "image/svg+xml"
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp"
 };
 
 async function isFile(filePath) {
@@ -58,6 +66,12 @@ createServer(async (request, response) => {
     pathname = pathname.slice(basePath.length) || "/";
   }
 
+  const redirect = redirectRules.find(([source]) => source === pathname);
+  if (redirect) {
+    response.writeHead(redirect[2], { Location: `${basePath}${redirect[1]}` }).end();
+    return;
+  }
+
   const relative = pathname.split("/").filter(Boolean).join(path.sep);
   let filePath;
   if (pathname === "/") {
@@ -86,6 +100,22 @@ createServer(async (request, response) => {
     });
     response.end(request.method === "HEAD" ? undefined : body);
   } catch {
+    let directory = path.dirname(filePath);
+    while (directory === root || directory.startsWith(`${root}${path.sep}`)) {
+      const notFoundFile = path.join(directory, "404.html");
+      if (await isFile(notFoundFile)) {
+        const body = await readFile(notFoundFile);
+        response.writeHead(404, {
+          "Content-Type": "text/html; charset=utf-8",
+          "X-Content-Type-Options": "nosniff",
+          "Cache-Control": "no-store"
+        });
+        response.end(request.method === "HEAD" ? undefined : body);
+        return;
+      }
+      if (directory === root) break;
+      directory = path.dirname(directory);
+    }
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }).end("Not found");
   }
 }).listen(port, "127.0.0.1", () => {

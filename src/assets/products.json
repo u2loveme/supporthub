@@ -1,25 +1,28 @@
 {
   "products": [
     {
-      "id": "token-monitor",
-      "displayName": "Token Monitor",
-      "shortDescription": "A desktop companion for keeping AI usage in view.",
-      "supportMessage": "Support is optional and helps fund ongoing work on Token Monitor.",
+      "id": "quotaarc",
+      "displayName": "QuotaArc",
+      "shortDescription": "AI quota and usage at a glance.",
+      "supportMessage": "Support is optional. Contributions help fund maintenance, fixes, and future releases.",
       "icon": "◉",
-      "accent": "#d7f26b",
-      "accentSoft": "rgba(215, 242, 107, .12)",
+      "iconImage": "token-monitor-icon.png",
+      "previewImage": "token-monitor-preview.png",
+      "accent": "#9bb7c8",
+      "accentSoft": "rgba(155, 183, 200, .12)",
       "githubUrl": "",
-      "suggestedAmounts": ["$3", "$5", "$10"],
       "providers": {
         "international": {
           "name": "Donatello",
-          "state": "unavailable",
-          "url": ""
+          "state": "configured",
+          "url": "https://donatello.to/vlad_2love?g=quota-arc"
         },
         "ukraine": {
-          "name": "mono jar",
-          "state": "unavailable",
-          "url": ""
+          "name": "mono",
+          "nameInArtwork": true,
+          "qrImage": "token-monitor-mono-qr.png",
+          "state": "configured",
+          "url": "https://send.monobank.ua/jar/2DSgR5hSoW"
         }
       }
     },
@@ -27,12 +30,11 @@
       "id": "fossidesk",
       "displayName": "FossiDesk",
       "shortDescription": "A desktop workspace for everyday work.",
-      "supportMessage": "Support is optional and helps fund ongoing work on FossiDesk.",
+      "supportMessage": "Support is optional. Contributions help fund maintenance, fixes, and future releases.",
       "icon": "✿",
       "accent": "#f2a875",
       "accentSoft": "rgba(242, 168, 117, .13)",
       "githubUrl": "",
-      "suggestedAmounts": ["$3", "$5", "$10"],
       "providers": {
         "international": {
           "name": "Donatello",
@@ -40,7 +42,7 @@
           "url": ""
         },
         "ukraine": {
-          "name": "mono jar",
+          "name": "mono",
           "state": "unavailable",
           "url": ""
         }

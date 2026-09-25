@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const output = path.join(root, "dist");
 const wrangler = path.join(root, "node_modules", "wrangler", "bin", "wrangler.js");
+const products = JSON.parse(await readFile(path.join(output, "assets", "products.json"), "utf8")).products;
 
 async function reservePort() {
   const server = createServer();
@@ -46,32 +49,81 @@ async function waitForPreview() {
   throw new Error(`Wrangler preview did not become ready.\n${logs}`);
 }
 
+async function response(pathname, options = {}) {
+  return fetch(`${base}${pathname}`, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(5000),
+    ...options
+  });
+}
+
+function assertHtmlRoute(html, pathname, locale, text) {
+  assert.match(html, new RegExp(`<html lang="${locale}">`), `${pathname} must have lang=${locale}`);
+  assert.match(html, /<meta property="og:site_name" content="Vivi Bureau"\s*\/>/);
+  assert.doesNotMatch(html, /Support\s*Hub/i, `${pathname} must not expose the former public brand`);
+  const visibleText = html.replace(/<[^>]*>/g, "");
+  assert.ok(visibleText.includes(text), `${pathname} must include its static ${locale} page text`);
+  assert.doesNotMatch(html, /<script\b/i, `${pathname} must render without client-side scripts`);
+  const stylesheet = html.match(/<link rel="stylesheet" href="([^"]+)"/);
+  assert.ok(stylesheet, `${pathname} must link its stylesheet`);
+  const stylesheetUrl = new URL(stylesheet[1], `${base}${pathname}`);
+  assert.equal(stylesheetUrl.pathname, "/assets/styles.css", `${pathname} stylesheet must resolve to /assets/styles.css`);
+}
+
 try {
   const home = await waitForPreview();
   assert.equal(home.status, 200, "Cloudflare preview home route must return 200");
+  assertHtmlRoute(await home.text(), "/", "en", "Vivi Bureau");
 
-  const products = JSON.parse(await (await fetch(`${base}/assets/products.json`)).text()).products;
+  const ukHome = await response("/uk");
+  assert.equal(ukHome.status, 200, "/uk must serve its flat localized static route");
+  assertHtmlRoute(await ukHome.text(), "/uk", "uk", "Vivi Bureau");
+  const ukHomeSlash = await response("/uk/");
+  assert.equal(ukHomeSlash.status, 307, "/uk/ must redirect to the no-slash canonical route");
+  assert.equal(ukHomeSlash.headers.get("location"), "/uk", "/uk/ must redirect directly to /uk");
+
   for (const product of products) {
-    const canonicalPath = `/${product.id}`;
-    const canonical = await fetch(`${base}${canonicalPath}`, { redirect: "manual" });
-    assert.equal(canonical.status, 200, `${canonicalPath} must return 200`);
+    for (const [prefix, locale, expectedText] of [
+      ["", "en", product.id === "quotaarc" ? "Support via mono" : "No support options are available right now."],
+      ["/uk", "uk", product.id === "quotaarc" ? "Підтримати через mono" : "Зараз варіантів підтримки немає."]
+    ]) {
+      const route = `${prefix}/${product.id}`;
+      const canonical = await response(route);
+      assert.equal(canonical.status, 200, `${route} must return 200`);
+      assertHtmlRoute(await canonical.text(), route, locale, expectedText);
 
-    const trailingSlash = await fetch(`${base}${canonicalPath}/`, { redirect: "manual" });
-    assert.equal(trailingSlash.status, 307, `${canonicalPath}/ must redirect to its canonical route`);
-    assert.equal(trailingSlash.headers.get("location"), canonicalPath, `${canonicalPath}/ must redirect directly to ${canonicalPath}`);
+      const slash = await response(`${route}/`);
+      assert.equal(slash.status, 307, `${route}/ must redirect to its canonical route`);
+      assert.equal(slash.headers.get("location"), route, `${route}/ must redirect directly to ${route}`);
+    }
   }
 
-  for (const assetPath of ["/assets/app.js", "/assets/styles.css", "/assets/products.json"]) {
-    const response = await fetch(`${base}${assetPath}`, { redirect: "manual" });
-    assert.equal(response.status, 200, `${assetPath} must return 200`);
+  for (const [legacyRoute, canonicalRoute] of [["/token-monitor", "/quotaarc"], ["/uk/token-monitor", "/uk/quotaarc"]]) {
+    const legacy = await response(legacyRoute);
+    assert.equal(legacy.status, 301, `${legacyRoute} must permanently redirect to the QuotaArc route`);
+    assert.equal(legacy.headers.get("location"), canonicalRoute, `${legacyRoute} must point to ${canonicalRoute}`);
   }
 
-  for (const missingPath of ["/missing-page", "/assets/missing.js"]) {
-    const response = await fetch(`${base}${missingPath}`, { redirect: "manual" });
-    assert.equal(response.status, 404, `${missingPath} must remain a 404 (no SPA fallback)`);
+  for (const assetPath of ["/assets/products.json", "/assets/styles.css", "/assets/vivienne.webp", "/assets/vivienne.jpg", "/assets/support-international.webp", "/assets/support-ukraine.webp", "/assets/token-monitor-icon.png", "/assets/token-monitor-preview.png"]) {
+    const asset = await response(assetPath);
+    assert.equal(asset.status, 200, `${assetPath} must return 200`);
+  }
+  assert.equal((await response("/assets/app.js")).status, 404, "No client-side app bundle should be deployed");
+
+  for (const [route, locale, expectedText] of [
+    ["/missing-page", "en", "Page not found"],
+    ["/uk/missing-page", "uk", "Сторінку не знайдено"],
+    ["/uk/deep/missing-page", "uk", "Сторінку не знайдено"],
+    ["/assets/missing.js", "en", "Page not found"]
+  ]) {
+    const missing = await response(route);
+    assert.equal(missing.status, 404, `${route} must remain a real 404`);
+    const html = await missing.text();
+    assert.match(html, new RegExp(`<html lang="${locale}">`), `${route} must use the nearest ${locale} 404 page`);
+    assert.ok(html.includes(expectedText), `${route} must include localized not-found copy`);
   }
 
-  console.log(`Wrangler Static Assets smoke test passed: /, ${products.map((product) => `/${product.id}`).join(", ")}, slash redirects, assets, and 404s.`);
+  console.log(`Wrangler Static Assets smoke test passed: EN/UK home and product routes, canonical slash redirects, assets, and localized real 404s.`);
 } catch (error) {
   console.error(`${error.stack ?? error}\n\nWrangler output:\n${logs}`);
   process.exitCode = 1;

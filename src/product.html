@@ -1,27 +1,39 @@
 <!doctype html>
-<html lang="en">
+<html lang="__LANG__">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#11120f" />
-    <meta name="description" content="View optional support options for this application." />
-    <title>Support application</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='20' fill='%23d7f26b'/%3E%3Cpath d='M32 47S13 36 13 23a10 10 0 0 1 19-5 10 10 0 0 1 19 5c0 13-19 24-19 24Z' fill='%2311120f'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="__ASSET_PREFIX__assets/styles.css" />
-    <script type="module" src="__ASSET_PREFIX__assets/app.js"></script>
+    <meta name="theme-color" content="#171614" />
+    <meta name="application-name" content="Vivi Bureau" />
+    <meta name="description" content="__DESCRIPTION__" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Vivi Bureau" />
+    <meta property="og:locale" content="__OG_LOCALE__" />
+    <meta property="og:locale:alternate" content="__OG_ALTERNATE__" />
+    <meta property="og:title" content="__TITLE__" />
+    <meta property="og:description" content="__DESCRIPTION__" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="__TITLE__" />
+    <meta name="twitter:description" content="__DESCRIPTION__" />
+    __SEO_TAGS__
+    <title>__TITLE__</title>
+    <link rel="icon" href="__FAVICON__" />
+    <link rel="stylesheet" href="__STYLESHEET__" />
   </head>
-  <body>
+  <body class="__BODY_CLASS__">
     <div class="site-shell">
       <header class="topbar">
-        <a class="wordmark" href="__HOME_HREF__" aria-label="Support Hub home"><span class="wordmark-mark">♥</span> little by little</a>
-        <a class="topbar-back" href="__HOME_HREF__">All projects <span aria-hidden="true">↗</span></a>
+        <a class="wordmark" href="__HOME_HREF__" aria-label="Vivi Bureau"><span class="wordmark-mark" aria-hidden="true">V</span><span>Vivi Bureau</span></a>
+        <div class="product-navigation">
+          <a class="topbar-back" href="__HOME_HREF__"><span aria-hidden="true">←</span> __ALL_APPS__</a>
+          __LANGUAGE_SWITCHER__
+        </div>
       </header>
-      <main id="app" class="page-content" data-product-id="__PRODUCT_ID__" data-home-href="__HOME_HREF__" aria-live="polite">
-        <div class="loading-state">A little moment…</div>
+      <main class="page-content">
+        __CONTENT__
       </main>
       <footer class="site-footer">
-        <span>Small tools. Human-sized support.</span>
-        <span class="footer-privacy">No tracking. No pressure. Always optional.</span>
+        <span class="footer-signature">__FOOTER_TAGLINE__</span>
       </footer>
     </div>
   </body>

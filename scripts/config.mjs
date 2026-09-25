@@ -14,8 +14,18 @@ export function validateProducts(products) {
     if (seenIds.has(product.id)) throw new Error(`Duplicate product id: ${product.id}`);
     seenIds.add(product.id);
 
+    for (const imageField of ["iconImage", "previewImage"]) {
+      const imageName = product[imageField];
+      if (imageName !== undefined && (typeof imageName !== "string" || !/^[a-z0-9][a-z0-9.-]*\.(?:png|webp|svg)$/i.test(imageName))) {
+        throw new Error(`Invalid ${imageField} for product ${product.id}`);
+      }
+    }
+
     for (const region of providerRegions) {
       const provider = product.providers?.[region];
+      if (provider?.qrImage !== undefined && (typeof provider.qrImage !== "string" || !/^[a-z0-9][a-z0-9.-]*\.(?:png|webp)$/i.test(provider.qrImage))) {
+        throw new Error(`Invalid qrImage for provider ${product.id}.${region}`);
+      }
       if (provider?.state === "configured" && resolveProvider(provider).state !== "configured") {
         throw new Error(`Configured provider ${product.id}.${region} must have a valid public HTTPS URL`);
       }
