@@ -5,13 +5,18 @@ Apps, tools & side projects. Vivi Bureau is a small independent home for QuotaAr
 ## Project structure
 
 - `src/assets/products.json` — product registry and per-product provider settings.
+- `src/quotaarc-release.js` — the single optional QuotaArc release target/version configuration.
+- `src/download-worker.js` and `src/assets/download-attribution-core.js` — localized download endpoint and anonymous attribution event.
 - `src/locales/en.json` and `src/locales/uk.json` — shared UI copy and localized product descriptions.
 - `src/product.html` — shared product page template.
 - `src/assets/styles.css` — shared presentation.
 - `scripts/build.mjs` — builds complete localized static HTML routes and assets in `dist/`.
 - `scripts/verify-production.mjs` — builds and checks release files, providers, paths, and Wrangler configuration.
+- `scripts/download-attribution.test.mjs` — focused endpoint and privacy tests.
+- `scripts/report-downloads.mjs` — local aggregate report for Workers Analytics Engine.
+- `docs/QUOTAARC_DOWNLOAD_ANALYTICS.md` — source/campaign convention, reporting, release setup, and privacy details.
 - `scripts/preview.mjs` — previews generic static output locally.
-- `wrangler.jsonc` — Cloudflare Workers Static Assets settings.
+- `wrangler.jsonc` — Cloudflare Worker with static assets and Analytics Engine bindings; only QuotaArc download paths run through Worker code first.
 
 ## Product configuration
 
@@ -62,12 +67,13 @@ Requires Node.js 20 or newer. Wrangler 4 is pinned in `package.json` and `packag
 ```powershell
 npm ci
 npm run build
+npm run test:analytics
 npm run verify:production
 npm run verify:cloudflare
 npm run cloudflare:preview
 ```
 
-`verify:production` builds and checks all English and Ukrainian static pages, provider rules, SEO/language metadata, required assets, portable relative paths, and Cloudflare configuration, then runs the automated Wrangler routing smoke test. `verify:cloudflare` runs that route test on its own. `cloudflare:preview` starts Wrangler's interactive local asset server. Unknown pages/assets must return a localized HTTP 404; trailing-slash routes redirect to their no-slash canonical paths. The generated production pages contain no client-side application bundle.
+`verify:production` builds and checks all English and Ukrainian pages, provider rules, SEO/language metadata, required assets, portable relative paths, and Cloudflare configuration, then runs the automated Wrangler routing smoke test. `verify:cloudflare` runs that route test on its own. `cloudflare:preview` starts Wrangler's interactive local asset server. Unknown pages/assets must return a localized HTTP 404; trailing-slash routes redirect to their no-slash canonical paths. The QuotaArc attribution module is included only when a valid public release asset is configured; the desktop app remains telemetry-free.
 
 For a preview using only the generic static host resolver, use `node scripts/preview.mjs`. That preview serves built files directly and never rewrites unknown paths to the home page.
 

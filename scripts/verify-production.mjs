@@ -28,7 +28,13 @@ assert.equal(cloudflare.dependencies_instrumentation?.enabled, false, "Dependenc
 assert.equal(cloudflare.assets?.directory, "./dist/", "Cloudflare must publish the production output directory");
 assert.equal(cloudflare.assets?.html_handling, "drop-trailing-slash", "Cloudflare routes must use canonical no-slash URLs");
 assert.equal(cloudflare.assets?.not_found_handling, "404-page", "Unknown routes must use real localized 404 pages");
-assert.ok(!cloudflare.main, "Static Assets deployment must not add Worker runtime code");
+assert.equal(cloudflare.main, "./src/download-worker.js", "Download routing must use the focused Worker entrypoint");
+assert.equal(cloudflare.assets?.binding, "ASSETS", "The Worker must be able to delegate regular routes to static assets");
+assert.deepEqual(cloudflare.assets?.run_worker_first, ["/quotaarc/download*", "/uk/quotaarc/download*"], "Only localized QuotaArc download paths should run through the Worker first");
+assert.deepEqual(cloudflare.analytics_engine_datasets, [{ binding: "QUOTAARC_ANALYTICS", dataset: "quotaarc_download_events" }]);
+const releaseSource = await readFile(path.join(root, "src/quotaarc-release.js"), "utf8");
+assert.match(releaseSource, /version:\s*""/);
+assert.match(releaseSource, /url:\s*""/);
 
 const sourceProducts = JSON.parse(await readFile(path.join(root, "src/assets/products.json"), "utf8"));
 const products = validateProducts(sourceProducts.products);
@@ -64,7 +70,7 @@ assert.equal(fossiDesk.providers.ukraine.state, "unavailable");
 assert.equal(fossiDesk.providers.international.state, "unavailable");
 assert.ok(products.every((product) => product.githubUrl === ""), "No unverified GitHub provider URLs may be active");
 
-const expectedAssets = ["products.json", "styles.css", "support-international.webp", "support-ukraine.webp", "token-monitor-icon.png", "token-monitor-mono-qr.png", "token-monitor-preview.png", "vivienne.jpg", "vivienne.webp"];
+const expectedAssets = ["download-attribution-core.js", "download-attribution.js", "products.json", "styles.css", "support-international.webp", "support-ukraine.webp", "token-monitor-icon.png", "token-monitor-mono-qr.png", "token-monitor-preview.png", "vivienne.jpg", "vivienne.webp"];
 for (const asset of expectedAssets) await requireFile(`assets/${asset}`);
 assert.deepEqual((await readdir(path.join(output, "assets"))).sort(), expectedAssets.slice().sort(), "Production must contain only required static assets");
 await requireFile(".nojekyll");
@@ -224,7 +230,9 @@ assert.doesNotMatch(quotaArcPage, /provider-placeholder/);
 assert.match(quotaArcPage, /QuotaArc/);
 assert.doesNotMatch(quotaArcPage, /card number|\b\d{16}\b/i);
 assert.doesNotMatch(quotaArcPage, /Unavailable|No payment link is configured/i);
+assert.doesNotMatch(quotaArcPage, /data-download-attribution|download-attribution\.js|Download for Windows/);
 assert.match(await requireFile("uk/quotaarc.html"), /Donatello/);
+assert.doesNotMatch(await requireFile("uk/quotaarc.html"), /data-download-attribution|download-attribution\.js|Завантажити для Windows/);
 assert.doesNotMatch(await requireFile("uk/quotaarc.html"), /Номер картки|\b\d{16}\b/i);
 const redirectRules = await requireFile("_redirects");
 assert.match(redirectRules, /^\/token-monitor \/quotaarc 301$/m);

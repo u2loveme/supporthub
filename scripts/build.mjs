@@ -3,6 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateProducts } from "./config.mjs";
 import { parseSafeGithubUrl, resolveProvider } from "../src/assets/provider-policy.js";
+import { resolveReleaseTarget } from "../src/assets/download-attribution-core.js";
+import { quotaarcRelease } from "../src/quotaarc-release.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const source = path.join(root, "src");
@@ -245,8 +247,15 @@ function renderProductContent(product, localeCode, documentPath) {
   const accent = safeColor(product.accent, /^#[0-9a-f]{6}$/i, "#f2a875");
   const accentSoft = safeColor(product.accentSoft, /^rgba?\([\d.,%\s]+\)$/i, "rgba(242, 168, 117, .13)");
   const github = parseSafeGithubUrl(product.githubUrl);
+  const releaseTarget = product.id === "quotaarc" ? resolveReleaseTarget(quotaarcRelease) : null;
+  const downloadLink = releaseTarget
+    ? `<a class="download-link" data-download-attribution href="${escapeHtml(relativeHref(documentPath, `${productRoute(localeCode, product.id)}/download`))}?src=vivibureau&amp;campaign=evergreen">${escapeHtml(locale.downloadForWindows)} <span aria-hidden="true">↓</span></a>`
+    : "";
   const githubLink = github
-    ? `<div class="product-bottom-row"><a class="project-link" href="${escapeHtml(github.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(locale.githubLink)} <span aria-hidden="true">↗</span></a></div>`
+    ? `<a class="project-link" href="${escapeHtml(github.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(locale.githubLink)} <span aria-hidden="true">↗</span></a>`
+    : "";
+  const productActions = downloadLink || githubLink
+    ? `<div class="product-bottom-row">${downloadLink}${githubLink}</div>`
     : "";
   const preview = localized.previewImage
     ? `<figure class="product-preview"><img src="${escapeHtml(relativeHref(documentPath, `/assets/${localized.previewImage}`))}" alt="${escapeHtml(localized.previewAlt ?? `${localized.displayName} application preview`)}" width="1180" height="800" decoding="async" /></figure>`
@@ -261,7 +270,8 @@ function renderProductContent(product, localeCode, documentPath) {
     ${preview}
   </section>
     ${renderSupport(product, localeCode, documentPath)}
-  ${githubLink}`;
+  ${productActions}
+  ${downloadLink ? `<script type="module" src="${escapeHtml(relativeHref(documentPath, "/assets/download-attribution.js"))}"></script>` : ""}`;
 }
 
 function metadataValues(localeCode, documentPath, title, description, alternateLocale = localeCode === "en" ? "uk" : "en") {
@@ -375,7 +385,7 @@ for (const code of localeCodes) {
 
 await rm(output, { recursive: true, force: true });
 await mkdir(path.join(output, "assets"), { recursive: true });
-for (const asset of ["products.json", "styles.css", "vivienne.jpg", "vivienne.webp", "support-international.webp", "support-ukraine.webp", ...products.flatMap((product) => [product.iconImage, product.previewImage, ...Object.values(product.providers ?? {}).map((provider) => provider.qrImage)]).filter(Boolean)]) {
+for (const asset of ["products.json", "styles.css", "download-attribution.js", "download-attribution-core.js", "vivienne.jpg", "vivienne.webp", "support-international.webp", "support-ukraine.webp", ...products.flatMap((product) => [product.iconImage, product.previewImage, ...Object.values(product.providers ?? {}).map((provider) => provider.qrImage)]).filter(Boolean)]) {
   await cp(path.join(assetSource, asset), path.join(output, "assets", asset));
 }
 await writeFile(path.join(output, ".nojekyll"), "");

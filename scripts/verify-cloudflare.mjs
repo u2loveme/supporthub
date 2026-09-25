@@ -98,6 +98,21 @@ try {
     }
   }
 
+  for (const [route, locale, message] of [
+    ["/quotaarc/download?src=smoke&campaign=check", "en", "has not been published yet"],
+    ["/uk/quotaarc/download?src=smoke&campaign=check", "uk", "ще не опубліковано"]
+  ]) {
+    const unavailable = await response(route);
+    assert.equal(unavailable.status, 503, `${route} must remain safely unavailable until a release asset exists`);
+    const html = await unavailable.text();
+    assert.match(html, new RegExp(`<html lang="${locale}">`));
+    assert.ok(html.includes(message), `${route} must show localized controlled availability copy`);
+    assert.equal(unavailable.headers.get("cache-control"), "no-store");
+  }
+  const downloadHead = await response("/quotaarc/download", { method: "HEAD" });
+  assert.equal(downloadHead.status, 405, "HEAD must not be counted as a download intent");
+  assert.equal(downloadHead.headers.get("allow"), "GET");
+
   for (const [legacyRoute, canonicalRoute] of [["/token-monitor", "/quotaarc"], ["/uk/token-monitor", "/uk/quotaarc"]]) {
     const legacy = await response(legacyRoute);
     assert.equal(legacy.status, 301, `${legacyRoute} must permanently redirect to the QuotaArc route`);
@@ -123,7 +138,7 @@ try {
     assert.ok(html.includes(expectedText), `${route} must include localized not-found copy`);
   }
 
-  console.log(`Wrangler Static Assets smoke test passed: EN/UK home and product routes, canonical slash redirects, assets, and localized real 404s.`);
+  console.log(`Wrangler Worker + Static Assets smoke test passed: EN/UK home and product routes, canonical slash redirects, assets, and localized real 404s.`);
 } catch (error) {
   console.error(`${error.stack ?? error}\n\nWrangler output:\n${logs}`);
   process.exitCode = 1;

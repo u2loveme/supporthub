@@ -7,6 +7,8 @@
     "build": "node scripts/build.mjs",
     "verify:production": "node scripts/verify-production.mjs",
     "verify:cloudflare": "node scripts/verify-cloudflare.mjs",
+    "test:analytics": "node --test scripts/download-attribution.test.mjs",
+    "report:downloads": "node scripts/report-downloads.mjs",
     "preview": "node scripts/preview.mjs",
     "cloudflare:preview": "wrangler dev",
     "cloudflare:deploy": "wrangler deploy",

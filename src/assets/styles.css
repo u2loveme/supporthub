@@ -300,6 +300,10 @@ body.home-page .page-content { justify-content: flex-start; }
 .product-bottom-row { display: flex; align-items: center; max-width: 920px; margin-top: 18px; }
 .project-link, .back-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--muted); font-size: 14px; }
 .project-link { text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
+.download-link { display: inline-flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 17px; border: 1px solid rgba(255, 175, 122, .3); border-radius: 999px; background: rgba(255, 155, 92, .07); color: var(--orange-bright); font-size: 14px; font-weight: 700; transition: background-color 160ms ease-out, border-color 160ms ease-out, color 160ms ease-out; }
+.download-link:hover, .download-link:focus-visible { border-color: var(--orange-bright); background: rgba(255, 155, 92, .14); color: var(--paper); }
+.download-link span { display: inline-block; transition: transform 160ms ease-out; }
+.download-link:hover span, .download-link:focus-visible span { transform: translateY(2px); }
 
 .cat-signature { position: relative; isolation: isolate; display: grid; align-content: center; align-items: start; gap: 13px; width: 100%; min-height: 220px; margin: 0; padding: 0 0 0 24px; border-left: 1px solid rgba(220, 210, 196, .12); }
 .cat-signature::before { position: absolute; z-index: -1; inset: 9% -18px; border-radius: 50%; background: radial-gradient(ellipse at 52% 48%, rgba(255, 155, 92, .04), transparent 70%); content: ""; pointer-events: none; }

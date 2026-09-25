@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "vivi-bureau",
+  "main": "./src/download-worker.js",
   "compatibility_date": "2026-09-24",
   "workers_dev": true,
   "send_metrics": false,
@@ -9,7 +10,18 @@
   },
   "assets": {
     "directory": "./dist/",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/quotaarc/download*",
+      "/uk/quotaarc/download*"
+    ],
     "html_handling": "drop-trailing-slash",
     "not_found_handling": "404-page"
-  }
+  },
+  "analytics_engine_datasets": [
+    {
+      "binding": "QUOTAARC_ANALYTICS",
+      "dataset": "quotaarc_download_events"
+    }
+  ]
 }
