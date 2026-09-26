@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { validateProducts } from "./config.mjs";
 import { resolveProvider } from "../src/assets/provider-policy.js";
+import { quotaarcRelease } from "../src/quotaarc-release.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const output = path.join(root, "dist");
@@ -33,8 +34,16 @@ assert.equal(cloudflare.assets?.binding, "ASSETS", "The Worker must be able to d
 assert.deepEqual(cloudflare.assets?.run_worker_first, ["/quotaarc/download*", "/uk/quotaarc/download*"], "Only localized QuotaArc download paths should run through the Worker first");
 assert.deepEqual(cloudflare.analytics_engine_datasets, [{ binding: "QUOTAARC_ANALYTICS", dataset: "quotaarc_download_events" }]);
 const releaseSource = await readFile(path.join(root, "src/quotaarc-release.js"), "utf8");
-assert.match(releaseSource, /version:\s*""/);
-assert.match(releaseSource, /url:\s*""/);
+const releaseConfigured = quotaarcRelease.version !== "" && quotaarcRelease.url !== "";
+if (releaseConfigured) {
+  assert.equal(quotaarcRelease.version, "0.9.0");
+  assert.equal(quotaarcRelease.url, "https://github.com/u2loveme/QuotaArc/releases/download/v0.9.0/QuotaArc-0.9.0-win-x64.zip");
+  assert.match(releaseSource, /version:\s*"0\.9\.0"/);
+  assert.match(releaseSource, /releases\/download\/v0\.9\.0\/QuotaArc-0\.9\.0-win-x64\.zip/);
+} else {
+  assert.match(releaseSource, /version:\s*""/);
+  assert.match(releaseSource, /url:\s*""/);
+}
 
 const sourceProducts = JSON.parse(await readFile(path.join(root, "src/assets/products.json"), "utf8"));
 const products = validateProducts(sourceProducts.products);
@@ -105,7 +114,9 @@ function expectedBody(locale, productId = null) {
 
 function validateSeo(html, routePath, locale, productId = null) {
   assert.match(html, new RegExp(`<html lang="${locale}">`), `${routePath} must declare lang=${locale}`);
-  assert.doesNotMatch(html, /<script\b/i, `${routePath} must be static HTML with no client-side rendering script`);
+  if (!(productId === "quotaarc" && releaseConfigured)) {
+    assert.doesNotMatch(html, /<script\b/i, `${routePath} must be static HTML with no client-side rendering script`);
+  }
   assert.match(html, /<meta property="og:locale"/);
   assert.match(html, /<meta property="og:site_name" content="Vivi Bureau"\s*\/>/);
   assert.match(html, /<meta property="og:title"/);
@@ -230,9 +241,17 @@ assert.doesNotMatch(quotaArcPage, /provider-placeholder/);
 assert.match(quotaArcPage, /QuotaArc/);
 assert.doesNotMatch(quotaArcPage, /card number|\b\d{16}\b/i);
 assert.doesNotMatch(quotaArcPage, /Unavailable|No payment link is configured/i);
-assert.doesNotMatch(quotaArcPage, /data-download-attribution|download-attribution\.js|Download for Windows/);
+if (releaseConfigured) {
+  assert.match(quotaArcPage, /data-download-attribution|download-attribution\.js|Download for Windows/);
+} else {
+  assert.doesNotMatch(quotaArcPage, /data-download-attribution|download-attribution\.js|Download for Windows/);
+}
 assert.match(await requireFile("uk/quotaarc.html"), /Donatello/);
-assert.doesNotMatch(await requireFile("uk/quotaarc.html"), /data-download-attribution|download-attribution\.js|Завантажити для Windows/);
+if (releaseConfigured) {
+  assert.match(await requireFile("uk/quotaarc.html"), /data-download-attribution|download-attribution\.js|Завантажити для Windows/);
+} else {
+  assert.doesNotMatch(await requireFile("uk/quotaarc.html"), /data-download-attribution|download-attribution\.js|Завантажити для Windows/);
+}
 assert.doesNotMatch(await requireFile("uk/quotaarc.html"), /Номер картки|\b\d{16}\b/i);
 const redirectRules = await requireFile("_redirects");
 assert.match(redirectRules, /^\/token-monitor \/quotaarc 301$/m);

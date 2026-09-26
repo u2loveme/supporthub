@@ -4,6 +4,7 @@ import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { quotaarcRelease } from "../src/quotaarc-release.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const output = path.join(root, "dist");
@@ -63,7 +64,10 @@ function assertHtmlRoute(html, pathname, locale, text) {
   assert.doesNotMatch(html, /Support\s*Hub/i, `${pathname} must not expose the former public brand`);
   const visibleText = html.replace(/<[^>]*>/g, "");
   assert.ok(visibleText.includes(text), `${pathname} must include its static ${locale} page text`);
-  assert.doesNotMatch(html, /<script\b/i, `${pathname} must render without client-side scripts`);
+  const isConfiguredQuotaArcPage = quotaarcRelease.url && ["/quotaarc", "/uk/quotaarc"].includes(pathname);
+  if (!isConfiguredQuotaArcPage) {
+    assert.doesNotMatch(html, /<script\b/i, `${pathname} must render without client-side scripts`);
+  }
   const stylesheet = html.match(/<link rel="stylesheet" href="([^"]+)"/);
   assert.ok(stylesheet, `${pathname} must link its stylesheet`);
   const stylesheetUrl = new URL(stylesheet[1], `${base}${pathname}`);
@@ -98,20 +102,28 @@ try {
     }
   }
 
-  for (const [route, locale, message] of [
-    ["/quotaarc/download?src=smoke&campaign=check", "en", "has not been published yet"],
-    ["/uk/quotaarc/download?src=smoke&campaign=check", "uk", "ще не опубліковано"]
-  ]) {
-    const unavailable = await response(route);
-    assert.equal(unavailable.status, 503, `${route} must remain safely unavailable until a release asset exists`);
-    const html = await unavailable.text();
-    assert.match(html, new RegExp(`<html lang="${locale}">`));
-    assert.ok(html.includes(message), `${route} must show localized controlled availability copy`);
-    assert.equal(unavailable.headers.get("cache-control"), "no-store");
+  if (quotaarcRelease.url) {
+    for (const route of ["/quotaarc/download", "/uk/quotaarc/download"]) {
+      const downloadHead = await response(route, { method: "HEAD" });
+      assert.equal(downloadHead.status, 405, `${route} HEAD must not be counted as a download intent`);
+      assert.equal(downloadHead.headers.get("allow"), "GET");
+    }
+  } else {
+    for (const [route, locale, message] of [
+      ["/quotaarc/download?src=smoke&campaign=check", "en", "has not been published yet"],
+      ["/uk/quotaarc/download?src=smoke&campaign=check", "uk", "ще не опубліковано"]
+    ]) {
+      const unavailable = await response(route);
+      assert.equal(unavailable.status, 503, `${route} must remain safely unavailable until a release asset exists`);
+      const html = await unavailable.text();
+      assert.match(html, new RegExp(`<html lang="${locale}">`));
+      assert.ok(html.includes(message), `${route} must show localized controlled availability copy`);
+      assert.equal(unavailable.headers.get("cache-control"), "no-store");
+    }
+    const downloadHead = await response("/quotaarc/download", { method: "HEAD" });
+    assert.equal(downloadHead.status, 405, "HEAD must not be counted as a download intent");
+    assert.equal(downloadHead.headers.get("allow"), "GET");
   }
-  const downloadHead = await response("/quotaarc/download", { method: "HEAD" });
-  assert.equal(downloadHead.status, 405, "HEAD must not be counted as a download intent");
-  assert.equal(downloadHead.headers.get("allow"), "GET");
 
   for (const [legacyRoute, canonicalRoute] of [["/token-monitor", "/quotaarc"], ["/uk/token-monitor", "/uk/quotaarc"]]) {
     const legacy = await response(legacyRoute);

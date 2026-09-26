@@ -38,6 +38,17 @@ Use lowercase slugs. Known source examples: `direct`, `github`, `producthunt`, `
 | Reddit | `https://vivibureau.pp.ua/quotaarc?src=reddit-chatgptcoding&campaign=v1-launch` |
 | GitHub README | `https://vivibureau.pp.ua/quotaarc?src=github&campaign=readme` |
 
+## Controlled release smoke test
+
+After a public asset is configured and deployed, perform at most one end-to-end
+CTA click from
+`https://vivibureau.pp.ua/quotaarc?src=codex-smoke&campaign=release-verification`.
+The page carries these values to `/quotaarc/download`; the event appears under
+the dedicated `codex-smoke` source in the local aggregate report. Keep that
+row separate from ordinary referral and launch totals. Do not repeat the live
+click to troubleshoot; the local analytics tests cover redirect behavior
+when Analytics Engine writes fail.
+
 When the download CTA is enabled, a small page script carries only `src` and `campaign` from the current QuotaArc page URL to `/quotaarc/download`. It uses no cookie, localStorage, sessionStorage, or user identifier. Direct product-page visits use `src=vivibureau&campaign=evergreen`; direct endpoint requests without values use `direct&evergreen`.
 
 ## Local aggregate report
